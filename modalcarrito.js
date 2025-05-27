@@ -5,8 +5,9 @@ document.querySelectorAll('.agregar-carrito').forEach(btn => {
   btn.addEventListener('click', () => {
     const nombre = btn.dataset.nombre;
     const precio = parseInt(btn.dataset.precio);
+    const numero = btn.getAttribute('data-numero');
 
-    carrito.push({ nombre, precio });
+    carrito.push({ nombre, precio, numero });
     localStorage.setItem('carrito', JSON.stringify(carrito));
 
     mostrarToast(`${nombre} fue agregado al carrito.`);
@@ -28,15 +29,32 @@ abrirBtn.addEventListener('click', () => {
   let total = 0;
   let mensaje = 'Hola! Quiero hacer el siguiente pedido:\n';
 
-  carrito.forEach((item, index) => {
+  // Agrupar productos iguales
+  const productosAgrupados = {};
+
+  carrito.forEach((item) => {
+    const key = `${item.numero}_${item.nombre}`;
+    if (productosAgrupados[key]) {
+      productosAgrupados[key].cantidad += 1;
+    } else {
+      productosAgrupados[key] = {
+        nombre: item.nombre,
+        precio: item.precio,
+        numero: item.numero,
+        cantidad: 1
+      };
+    }
+    total += item.precio;
+  });
+
+  Object.values(productosAgrupados).forEach((item, index) => {
     const li = document.createElement('li');
     li.innerHTML = `
-      ${item.nombre} - $${item.precio}
+      x${item.cantidad} u del N°${item.numero} ${item.nombre}
       <button class="eliminar-item" data-index="${index}">❌</button>
     `;
     listaCarrito.appendChild(li);
-    total += item.precio;
-    mensaje += `• ${item.nombre} - $${item.precio}\n`;
+    mensaje += `x${item.cantidad} u del N°${item.numero} ${item.nombre}\n`;
   });
 
   totalCarrito.innerText = total;
@@ -46,12 +64,13 @@ abrirBtn.addEventListener('click', () => {
   document.querySelectorAll('.eliminar-item').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const index = e.target.getAttribute('data-index');
-      carrito.splice(index, 1);
+      carrito.splice(index, 1); // Esto eliminará por índice, pero habría que ajustar si agrupamos
       localStorage.setItem('carrito', JSON.stringify(carrito));
       abrirBtn.click();
     });
   });
 });
+
 
 cerrarBtn.addEventListener('click', () => {
   modal.style.display = 'none';
